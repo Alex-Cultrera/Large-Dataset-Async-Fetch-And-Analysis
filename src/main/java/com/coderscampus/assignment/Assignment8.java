@@ -6,15 +6,15 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import org.junit.jupiter.api.Test;
-
 public class Assignment8 {
+	
 	private List<Integer> numbers = null;
 	private AtomicInteger i = new AtomicInteger(0);
 
@@ -29,47 +29,46 @@ public class Assignment8 {
 		}
 	}
 
-	List<Integer> numbersList;
+	private CompletableFuture<List<Integer>> getData() throws IOException {
 
-	@Test
-	public void getData() throws IOException {
-
-		
 		ExecutorService ioBoundTask = Executors.newCachedThreadPool();
-		ExecutorService cpuBoundTask = Executors.newSingleThreadExecutor();
 		
-		List<CompletableFuture<Void>> futures = new ArrayList<>();
+		List<CompletableFuture<List<Integer>>> futures = new ArrayList<>();
 		
 		for (int x = 0; x < 1000; x++) {
-			CompletableFuture<Void> future = CompletableFuture.supplyAsync(this::getNumbers, ioBoundTask)
-					   				  .thenAcceptAsync(numbersList -> System.out.println(numbersList), ioBoundTask);
+			CompletableFuture<List<Integer>> future = CompletableFuture.supplyAsync(this::getNumbers, ioBoundTask);
 			futures.add(future);
 		}
 		
 		while (futures.stream()
 				.filter(CompletableFuture::isDone)
-				.count() < 500) {}
+				.count() < 1000) {}
 		
-		System.out.println("done");
+		System.out.println("all done fetching");
+		
+		return CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]))
+				.thenApplyAsync(a -> futures.stream()
+									   .flatMap(future -> future.join().stream())
+									   .collect(Collectors.toList()), ioBoundTask);
 	}
 	
-//	 @Test
-//
-//	    public void getData () {
-//
-//	        Assignment8 assignment = new Assignment8();
-//
-//	       
-//	        for (int i=0; i<1000; i++) {
-//
-//	            List<Integer> numbersList = assignment.getNumbers();
-//
-//	            System.out.println(numbersList);
-//
-//	        }
-//
-//	    }
-	 
+	private void integerFrequency(List<Integer> integerList) {
+		integerList.stream();
+		System.out.println();
+		
+	}
+	
+	public static void main(String[] args) throws InterruptedException, ExecutionException, IOException {
+		
+		Assignment8 assignment8MainApp = new Assignment8();
+		List<Integer> resultingNumberList = assignment8MainApp.getData().get();
+		System.out.println("Total number of integers: " + resultingNumberList.size());
+		assignment8MainApp.integerFrequency(resultingNumberList);
+		System.exit(0);
+		
+	}
+
+
 	/**
 	 * This method will return the numbers that you'll need to process from the list
 	 * of Integers. However, it can only return 1000 records at a time. You will
