@@ -30,29 +30,46 @@ public class Assignment8 {
 	}
 
 	List<Integer> numbersList;
-	CompletableFuture<Void> future;
-	List<CompletableFuture<Void>> futures = new ArrayList<>();
-
 
 	@Test
 	public void getData() throws IOException {
 
-		Assignment8 mainThread = new Assignment8();
+		
 		ExecutorService ioBoundTask = Executors.newCachedThreadPool();
 		ExecutorService cpuBoundTask = Executors.newSingleThreadExecutor();
 		
-		for (int i = 0; i < 1000; i++) {
-			future = CompletableFuture.supplyAsync(() -> mainThread, ioBoundTask)
-					   .thenApplyAsync(main -> main.getNumbers(), ioBoundTask)
-					   .thenAcceptAsync(numbersList -> System.out.println(numbersList), cpuBoundTask);
+		List<CompletableFuture<Void>> futures = new ArrayList<>();
+		
+		for (int x = 0; x < 1000; x++) {
+			CompletableFuture<Void> future = CompletableFuture.supplyAsync(this::getNumbers, ioBoundTask)
+					   				  .thenAcceptAsync(numbersList -> System.out.println(numbersList), ioBoundTask);
+			futures.add(future);
 		}
 		
 		while (futures.stream()
 				.filter(CompletableFuture::isDone)
-				.count() < 100) {}
+				.count() < 500) {}
+		
+		System.out.println("done");
 	}
-
-
+	
+//	 @Test
+//
+//	    public void getData () {
+//
+//	        Assignment8 assignment = new Assignment8();
+//
+//	       
+//	        for (int i=0; i<1000; i++) {
+//
+//	            List<Integer> numbersList = assignment.getNumbers();
+//
+//	            System.out.println(numbersList);
+//
+//	        }
+//
+//	    }
+	 
 	/**
 	 * This method will return the numbers that you'll need to process from the list
 	 * of Integers. However, it can only return 1000 records at a time. You will
